@@ -1,0 +1,48 @@
+---
+title: "Processing Oyster Sites"
+author: "April Wright"
+date: "2024-03-20"
+output: html_document
+---
+
+Now, we're going to move to working with real lab data. For today and tomorrow, we will work with data from Dr. Morgan Kelly's lab. First, we will work with some spreadsheet data, then move on to genotypes.
+
+```{r}
+library(tidyverse)
+oysters <- read_csv("../data/OysterLocales.csv")
+```
+
+R doesn't understand this as a location. Our coordinates are reresented in degrees, minutes, and seconds Latitudinally and longitudinally. We need to separate latitude and longitude, and we need to parse these into coorinates R understands. 
+
+We will now work with a geospatial package called `parzer`:
+
+```{r eval=FALSE}
+
+install.packages("parzer")
+
+```
+
+
+And coordinate conversion becomes easy!
+```{r}
+
+library(parzer)
+
+oysters_converted = oysters %>%
+  mutate(Lon = parzer::parse_lon(Longitude),
+         Lat = parzer::parse_lat(Latitude))
+
+```
+
+Double check these numbers. Do they look right? If so, please save them to the `data_processed` directory.
+
+Let's put these on a map:
+
+```{r}
+library(leaflet)
+leaflet(oysters_converted) %>%
+  addTiles() %>% 
+#  setView(lng = -95, lat = 20, zoom = 4) %>% 
+  addMarkers(~Lon, ~Lat, clusterOptions = markerClusterOptions())
+```
+The important thing with maps is that we want to know for sure we're right. Zoom around and make sure the markers are where they go.

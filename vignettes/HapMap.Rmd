@@ -1,0 +1,177 @@
+---
+title: "Haplotype Maps"
+author: "April Wright"
+date: "2024-03-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+This morning, we looked at cleaning and mapping spatial data. This afternoon, we will add a genetic component to the question. These data also come from the lab of Morgan Kelly, and concern genetic variation among oysters. 
+
+One thing many scientists are interested in is haplotype maps. A haplotype refers to a physical grouping of genetic variants that tend to be inherited together. Usually these will be unique combinations of variants that occur near one another on a specific chromosome. A haplotype map does not refer to a geographic mapping, but a "map" in which researchers can understand how a haplotypes relate to one another, and even how they might relate to physical traits. 
+
+The data we are working with has been collected by Dr. Kelly's lab group in the Gulf Coast. These are a mitochondrial marker called COI, which evolves quickly enough that between-species differences can be viewed, but not so quickly that different members of the same species cannot be identified as such. Dr. Kelly's lab is interested in oyster responses to changing climate, therefore, they are collecting genetic and physiological data about what those oysters are doing in the Gulf. 
+
+We will be using two R packages today to look at the genetic data of our oysters:
+
+```{r eval=FALSE}
+
+
+install.packages("haplotype")
+devtools::install_git("https://gitee.com/zhangrenl/genehapr") 
+
+```
+Our data are stored in a common data format call 'fasta.' Let's click on a fasta file to open it. You will notice that each file begins with a line something like 
+
+```
+>NU10PO-F_C07_2024-02-23.ab1  (646 bp)
+```
+
+The first two letters in that sequence tell us where the data were collected. We can cross-reference these with out data spreadsheet from earlier. The rest tells us some other sequence information, including how many basepairs we have. This line is called the `header` line. 
+
+This is followed by the sequence data. fasta is a very commonly-used format, and many tools are available to work with fasta files. Something tricky, however, is that our haplotype tools want all our data in one file. Uh-oh.
+
+First, I'd like you to spitball with a partner about how you might solve this. No wrong answers, just come up with a solution or two. 
+
+Probably, you came up with something like:
+
+- Read in the files
+- Get the sequence
+- Make a list of all the sequences
+- Write to a file
+
+Conceptually quite easy, but needs some knowledge. First, let's think about getting a list. For this, we will use a function called `list.files`. Have a look at the help (`list.files`) and see if you can guess some of the things you might need to know to make it work.
+
+Roughly, the command is laid out like so:
+
+```
+list_of_files <- list.files(path = Where do you want to look for files? , pattern = What will you look for?)
+```
+
+If we translate to R, this looks like:
+
+```{r}
+
+list_of_files <- list.files("data/", pattern = ".fa")
+
+```
+
+We will search for the files that end in `.fa` in the directory `data`.
+
+Next, we will need to iteratively read them in. We want all of them!
+
+We will first work in the `geneHapR` R package.
+
+```{r}
+
+library(geneHapR)
+
+```
+
+This package has a tool for reading in the haplotype data Dr. Kelly collected. But it wants all the sequences in one file. For example, we can look at one file like so: 
+
+```{r eval=FALSE}
+
+seq <- import_seqs("../data/GI10PO-F_clean.fa", format = "fasta")
+```
+
+But we want many files. This is where lists and loops come in. We have a list of file names. We're now going to compile these into one big fasta file. I'm not going to lie to you: this task is utterly obnoxious to do in R. Just miserable. But it's very, very easy in UNIX. Let's take a moment and go to the UNIX shell. Here is the command we'll use
+
+```
+cat data/*.fa > combined.fa 
+
+```
+
+The UNIX shell is a very old way of interacting with the computer. It's fast, efficient, and a little bit terse. `cat` stands for concatenate. That means to take one thing and append it to another. the `*` is a wildcard. It will match anything. So we would read this as saying "match anything that ends in .fa, no matter what it starts with." The `>` means to pipe the output into the combined.fa file. This will contain all our sequences.
+
+Hey real quick - why do you think we're not writing the combined.fa file to the data directory right away? Talk about it with a partner for a minute. Really, there are two reasons. See if you can snag one. 
+
+Got it? Let's read in our file and make sure it worked.
+
+```{r eval=FALSE}
+
+seq <- import_seqs("combined.fa", format = "fasta")
+```
+
+We are going to make a directory called `data_processed`. We never want to be in a situation where we might mistake processed data for raw data, or vice versa. We will then move our file into that directory.
+
+```{r eval=FALSE}
+dir.create("data_processed")
+file.copy("combined.fa", "data_processed/combined.fa")
+```
+
+`dir.create` makes a directory for a file to go into. `file.copy` makes a copy of the file, then moves it into that directory. There are ways of moving a file without making a copy. Can anyone guess why it might be advantageous to make a copy first? 
+
+Now, load in the copy of the file found in `data_processed`. How can you be sure this is the same file you looked at before? We can look at some properties of the file to guess at this:
+
+```{r eval=FALSE}
+
+seq2 <- import_seqs("data_processed/combined.fa", format = "fasta")
+length(seq2) == length(seq)
+
+```
+
+But really, just visually look at it. When you are satisfied that these are the same file, you can delete the one in the root of your directory.
+
+Next, our sequences are not the same length because they are unaligned, meaning we have not discovered what regions are homologous. We will now do so. The `msa` package allows us to do a `m`ultiple `s`equence `a`lignment to identify these regions. 
+
+```{r eval=FALSE}
+
+if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
+BiocManager::install("msa")
+
+```
+
+
+We will align our sequences, then convert back to a format more commonly used in R: 
+
+```{r eval=FALSE}
+library(msa)
+my_alignment <- msa(seq2)
+seq2 <-  msa::msaConvert(my_alignment, "ape::DNAbin")
+```
+The sequences are now all one length, and have been aligned. We can procede with some visuals and mapping. The `haplotype` function will find identical sequences between the different mitochondrial genes from our analysis. These will be the haplotypes. Any missing data or indels are coded as a `?`. 
+
+```{r eval=FALSE}
+
+install.packages("pegas")
+library(pegas)
+```
+If you haven't loaded the above package, please do so now. 
+```{r eval=FALSE}
+haps <- pegas::haplotype(seq2)
+```
+
+We can view the haplotypes, but they aren't very helpful looking. Really all you can take away from this view is that most sequences are at least somewhat unique and different from the others at at least one site. 
+```{r eval=FALSE}
+haps
+```
+What we'll do next is put this visually. `dist.dna` counts how many differences there are between the haplotypes. For now, we're using "N", or "No Model" and simply tallying distances. You could however select other models, if you felt it right for your data. The `rmst` function computes a network to cover all the different nodes (haplotypes). Then we plot it. 
+
+
+```{r eval=FALSE}
+d <- dist.dna(haps, model = "N")
+nt <- rmst(d, B = 5)
+```
+
+
+
+OK, now let's look at the haplotype network.
+```{r eval=FALSE}
+plot(nt)
+```
+
+Oh boy, that is something! What is going on here? Let's look at the network object. 
+
+```{r eval=FALSE}
+nt
+```
+This tells us that there are 39 haplotypes, some of which are identical to one another 
+```{r eval=FALSE}
+pops <- c("GI", "GI", "GI", "GI", "GI", "GI","GI","GI", "GI", "LM", "LM", "LM", "LM", "LM", "LM", "LM", "LM", "LM", "NU","NU", "NU", "NU", "NU", "NU", "NU", "NU", "NU", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI" )
+plot(nt, pie = pops)
+```

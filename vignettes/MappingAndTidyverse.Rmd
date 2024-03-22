@@ -370,14 +370,13 @@ tree$edge.length
 Now let's try that map again. 
 
 ```{r}
-plot_object <- phylo.to.map(tree, only_lat_long, plot=FALSE)
-plot_object
+ obj<-phylo.to.map(tree, only_lat_long, plot=FALSE, rotate = TRUE, direction = "rightwards", type="phylogram")
 ```
 
 
 Finally, we will actually plot to space.
 
 ```{r}
-plot(plot_object,direction="rightwards",colors=color_selection, cex.points=c(0,1), lwd=c(3,1), ftype="off")
+plot(obj, ftype="i", direction = "rightward", colors = color_selection, ftype="i",fsize=0.6,cex.points=c(0.7,1.2), xlim=c(-150.25,100.25),ylim=c(-50,50))
 
 ```

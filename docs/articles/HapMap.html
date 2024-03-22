@@ -142,7 +142,7 @@ you might need to know to make it work.</p>
 <pre><code>list_of_files &lt;- list.files(path = Where do you want to look for files? , pattern = What will you look for?)</code></pre>
 <p>If we translate to R, this looks like:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">list_of_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"data/"</span>, pattern <span class="op">=</span> <span class="st">".fa"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">list_of_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"../data/"</span>, pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"clean"</span>, <span class="st">".fa"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>We will search for the files that end in <code>.fa</code> in the
 directory <code>data</code>.</p>
 <p>Next, we will need to iteratively read them in. We want all of
@@ -164,7 +164,7 @@ have a list of file names. We’re now going to compile these into one big
 fasta file. I’m not going to lie to you: this task is utterly obnoxious
 to do in R. Just miserable. But it’s very, very easy in UNIX. Let’s take
 a moment and go to the UNIX shell. Here is the command we’ll use</p>
-<pre><code>cat data/*.fa &gt; combined.fa 
+<pre><code>cat data/*cleaned*.fa &gt; combined.fa 
 </code></pre>
 <p>The UNIX shell is a very old way of interacting with the computer.
 It’s fast, efficient, and a little bit terse. <code>cat</code> stands
@@ -178,7 +178,7 @@ file to the data directory right away? Talk about it with a partner for
 a minute. Really, there are two reasons. See if you can snag one.</p>
 <p>Got it? Let’s read in our file and make sure it worked.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seq</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/geneHapR/man/import_seqs.html" class="external-link">import_seqs</a></span><span class="op">(</span><span class="st">"combined.fa"</span>, format <span class="op">=</span> <span class="st">"fasta"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">seq</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/geneHapR/man/import_seqs.html" class="external-link">import_seqs</a></span><span class="op">(</span><span class="st">"../data_processed/combined.fa"</span>, format <span class="op">=</span> <span class="st">"fasta"</span><span class="op">)</span></span></code></pre></div>
 <p>We are going to make a directory called <code>data_processed</code>.
 We never want to be in a situation where we might mistake processed data
 for raw data, or vice versa. We will then move our file into that
@@ -195,8 +195,9 @@ anyone guess why it might be advantageous to make a copy first?</p>
 you looked at before? We can look at some properties of the file to
 guess at this:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seq2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/geneHapR/man/import_seqs.html" class="external-link">import_seqs</a></span><span class="op">(</span><span class="st">"data_processed/combined.fa"</span>, format <span class="op">=</span> <span class="st">"fasta"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">seq2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/geneHapR/man/import_seqs.html" class="external-link">import_seqs</a></span><span class="op">(</span><span class="st">"../data_processed/combined.fa"</span>, format <span class="op">=</span> <span class="st">"fasta"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">seq2</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">seq</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] TRUE</span></span></code></pre>
 <p>But really, just visually look at it. When you are satisfied that
 these are the same file, you can delete the one in the root of your
 directory.</p>
@@ -205,52 +206,80 @@ unaligned, meaning we have not discovered what regions are homologous.
 We will now do so. The <code>msa</code> package allows us to do a
 <code>m</code>ultiple <code>s</code>equence <code>a</code>lignment to
 identify these regions.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"BiocManager"</span>, quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span></span>
 <span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"msa"</span><span class="op">)</span></span></code></pre></div>
 <p>We will align our sequences, then convert back to a format more
 commonly used in R:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.bioinf.jku.at/software/msa/" class="external-link">msa</a></span><span class="op">)</span></span>
-<span><span class="va">my_alignment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/msa/man/msa.html" class="external-link">msa</a></span><span class="op">(</span><span class="va">seq2</span><span class="op">)</span></span>
-<span><span class="va">seq2</span> <span class="op">&lt;-</span>  <span class="fu">msa</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/msa/man/msaConvert.html" class="external-link">msaConvert</a></span><span class="op">(</span><span class="va">my_alignment</span>, <span class="st">"ape::DNAbin"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.bioinf.jku.at/software/msa/" class="external-link">msa</a></span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Loading required package: Biostrings</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: BiocGenerics</span></span></code></pre>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## Attaching package: 'BiocGenerics'</span></span></code></pre>
+<pre><code><span><span class="co">## The following objects are masked from 'package:stats':</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     IQR, mad, sd, var, xtabs</span></span></code></pre>
+<pre><code><span><span class="co">## The following objects are masked from 'package:base':</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     anyDuplicated, aperm, append, as.data.frame, basename, cbind,</span></span>
+<span><span class="co">##     colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,</span></span>
+<span><span class="co">##     get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,</span></span>
+<span><span class="co">##     match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,</span></span>
+<span><span class="co">##     Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,</span></span>
+<span><span class="co">##     table, tapply, union, unique, unsplit, which.max, which.min</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: S4Vectors</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: stats4</span></span></code></pre>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## Attaching package: 'S4Vectors'</span></span></code></pre>
+<pre><code><span><span class="co">## The following objects are masked from 'package:base':</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     expand.grid, I, unname</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: IRanges</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: XVector</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: GenomeInfoDb</span></span></code></pre>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## Attaching package: 'Biostrings'</span></span></code></pre>
+<pre><code><span><span class="co">## The following object is masked from 'package:base':</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     strsplit</span></span></code></pre>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my_alignment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/msa/man/msaMuscle.html" class="external-link">msaMuscle</a></span><span class="op">(</span><span class="va">seq2</span><span class="op">)</span></span>
+<span><span class="va">my_alignment2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/msa/man/msa.html" class="external-link">msa</a></span><span class="op">(</span><span class="va">seq2</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## use default substitution matrix</span></span></code></pre>
+<p>Compare these two alignments a bit. Which do you think we should
+choose and why? Convert your preferred alignment to an object to use for
+pop gen and haplotypes with the code below:</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">aligned</span> <span class="op">&lt;-</span>  <span class="fu">msa</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/msa/man/msaConvert.html" class="external-link">msaConvert</a></span><span class="op">(</span><span class="va">my_alignment2</span>, <span class="st">"ape::DNAbin"</span><span class="op">)</span></span></code></pre></div>
 <p>The sequences are now all one length, and have been aligned. We can
-procede with some visuals and mapping. The <code>haplotype</code>
+procede with some visuals and mapping. The <code>seqs2hap</code>
 function will find identical sequences between the different
 mitochondrial genes from our analysis. These will be the haplotypes. Any
 missing data or indels are coded as a <code>?</code>.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pegas"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://emmanuelparadis.github.io/pegas.html" class="external-link">pegas</a></span><span class="op">)</span></span></code></pre></div>
 <p>If you haven’t loaded the above package, please do so now.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">haps</span> <span class="op">&lt;-</span> <span class="fu">pegas</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pegas/man/haplotype.html" class="external-link">haplotype</a></span><span class="op">(</span><span class="va">seq2</span><span class="op">)</span></span></code></pre></div>
-<p>We can view the haplotypes, but they aren’t very helpful looking.
-Really all you can take away from this view is that most sequences are
-at least somewhat unique and different from the others at at least one
-site.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">haps</span></span></code></pre></div>
-<p>What we’ll do next is put this visually. <code>dist.dna</code> counts
-how many differences there are between the haplotypes. For now, we’re
-using “N”, or “No Model” and simply tallying distances. You could
-however select other models, if you felt it right for your data. The
-<code>rmst</code> function computes a network to cover all the different
-nodes (haplotypes). Then we plot it.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ape/man/dist.dna.html" class="external-link">dist.dna</a></span><span class="op">(</span><span class="va">haps</span>, model <span class="op">=</span> <span class="st">"N"</span><span class="op">)</span></span>
-<span><span class="va">nt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/pegas/man/mst.html" class="external-link">rmst</a></span><span class="op">(</span><span class="va">d</span>, B <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
-<p>OK, now let’s look at the haplotype network.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">nt</span><span class="op">)</span></span></code></pre></div>
-<p>Oh boy, that is something! What is going on here? Let’s look at the
-network object.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">nt</span></span></code></pre></div>
-<p>This tells us that there are 39 haplotypes, some of which are
-identical to one another</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pops</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>,<span class="st">"GI"</span>,<span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"NU"</span>,<span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span> <span class="op">)</span></span>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://emmanuelparadis.github.io/pegas.html" class="external-link">pegas</a></span><span class="op">)</span></span>
+<span><span class="op">(</span><span class="va">haps</span> <span class="op">&lt;-</span> <span class="fu">pegas</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pegas/man/haplotype.html" class="external-link">haplotype</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Let’s take a quick look at some basic summary stats about the
+data:</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hapDiv</span><span class="op">&lt;-</span> <span class="fu">pegas</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pegas/man/hap.div.html" class="external-link">hap.div</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span> <span class="co"># Measure of diversity. Asks: What is the probability two haplotypes in this dataset are *different*</span></span>
+<span><span class="va">pi</span><span class="op">&lt;-</span> <span class="fu">pegas</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pegas/man/nuc.div.html" class="external-link">nuc.div</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span> <span class="co"># number of nucleotid differences divided by the number of comparisons. </span></span>
+<span><span class="va">tajima</span><span class="op">&lt;-</span> <span class="fu">pegas</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pegas/man/tajima.test.html" class="external-link">tajima.test</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span> <span class="co">#Tajima's test of neutrality 0 = neutral, D &lt; 0, recent selective sweep or expansion after bottleneck, D &gt;0 recent pop shrink or balancing selection</span></span></code></pre></div>
+<p>What we’ll do next is put this visually. A haplotype network
+calculated distances between clusters of haplotypes. This works by
+quantifying the genetic difference between clusters of genes, then
+making “branches” between them that reflect this distance. We can also
+incorporate spatial info in this step.</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">oysters_enumerated</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_delim</a></span><span class="op">(</span><span class="st">"../data/Oysters_enumerated.csv"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ape/man/dist.dna.html" class="external-link">dist.dna</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span></span>
+<span><span class="va">nt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/pegas/man/mst.html" class="external-link">rmst</a></span><span class="op">(</span><span class="va">d</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">nt</span>, threshold <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">14</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pops</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>, <span class="st">"GI"</span>,<span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>, <span class="st">"LM"</span>,  <span class="st">"NU"</span>,<span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>, <span class="st">"NU"</span>,  <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span>, <span class="st">"PI"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">nt</span>, pie <span class="op">=</span> <span class="va">pops</span><span class="op">)</span></span></code></pre></div>
   </div>
 

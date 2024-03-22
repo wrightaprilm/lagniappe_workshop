@@ -56,7 +56,7 @@ If we translate to R, this looks like:
 
 ```{r}
 
-list_of_files <- list.files("data/", pattern = ".fa")
+list_of_files <- list.files("../data/", pattern = c("clean", ".fa"))
 
 ```
 
@@ -82,7 +82,7 @@ seq <- import_seqs("../data/GI10PO-F_clean.fa", format = "fasta")
 But we want many files. This is where lists and loops come in. We have a list of file names. We're now going to compile these into one big fasta file. I'm not going to lie to you: this task is utterly obnoxious to do in R. Just miserable. But it's very, very easy in UNIX. Let's take a moment and go to the UNIX shell. Here is the command we'll use
 
 ```
-cat data/*.fa > combined.fa 
+cat data/*cleaned*.fa > combined.fa 
 
 ```
 
@@ -92,9 +92,9 @@ Hey real quick - why do you think we're not writing the combined.fa file to the 
 
 Got it? Let's read in our file and make sure it worked.
 
-```{r eval=FALSE}
+```{r}
 
-seq <- import_seqs("combined.fa", format = "fasta")
+seq <- import_seqs("../data_processed/combined.fa", format = "fasta")
 ```
 
 We are going to make a directory called `data_processed`. We never want to be in a situation where we might mistake processed data for raw data, or vice versa. We will then move our file into that directory.
@@ -108,9 +108,9 @@ file.copy("combined.fa", "data_processed/combined.fa")
 
 Now, load in the copy of the file found in `data_processed`. How can you be sure this is the same file you looked at before? We can look at some properties of the file to guess at this:
 
-```{r eval=FALSE}
+```{r}
 
-seq2 <- import_seqs("data_processed/combined.fa", format = "fasta")
+seq2 <- import_seqs("../data_processed/combined.fa", format = "fasta")
 length(seq2) == length(seq)
 
 ```
@@ -129,49 +129,46 @@ BiocManager::install("msa")
 
 We will align our sequences, then convert back to a format more commonly used in R: 
 
-```{r eval=FALSE}
+```{r}
 library(msa)
-my_alignment <- msa(seq2)
-seq2 <-  msa::msaConvert(my_alignment, "ape::DNAbin")
+my_alignment <- msaMuscle(seq2)
+my_alignment2 <- msa(seq2)
 ```
-The sequences are now all one length, and have been aligned. We can procede with some visuals and mapping. The `haplotype` function will find identical sequences between the different mitochondrial genes from our analysis. These will be the haplotypes. Any missing data or indels are coded as a `?`. 
 
-```{r eval=FALSE}
+Compare these two alignments a bit. Which do you think we should choose and why? Convert your preferred alignment to an object to use for pop gen and haplotypes with the code below: 
 
-install.packages("pegas")
-library(pegas)
+```{r}
+aligned <-  msa::msaConvert(my_alignment2, "ape::DNAbin")
 ```
+The sequences are now all one length, and have been aligned. We can procede with some visuals and mapping. The `seqs2hap` function will find identical sequences between the different mitochondrial genes from our analysis. These will be the haplotypes. Any missing data or indels are coded as a `?`. 
+
 If you haven't loaded the above package, please do so now. 
 ```{r eval=FALSE}
-haps <- pegas::haplotype(seq2)
+library(pegas)
+(haps <- pegas::haplotype(aligned))
+```
+Let's take a quick look at some basic summary stats about the data:
+
+```{r}
+
+hapDiv<- pegas::hap.div(aligned) # Measure of diversity. Asks: What is the probability two haplotypes in this dataset are *different*
+pi<- pegas::nuc.div(aligned) # number of nucleotid differences divided by the number of comparisons. 
+tajima<- pegas::tajima.test(aligned) #Tajima's test of neutrality 0 = neutral, D < 0, recent selective sweep or expansion after bottleneck, D >0 recent pop shrink or balancing selection
 ```
 
-We can view the haplotypes, but they aren't very helpful looking. Really all you can take away from this view is that most sequences are at least somewhat unique and different from the others at at least one site. 
-```{r eval=FALSE}
-haps
-```
-What we'll do next is put this visually. `dist.dna` counts how many differences there are between the haplotypes. For now, we're using "N", or "No Model" and simply tallying distances. You could however select other models, if you felt it right for your data. The `rmst` function computes a network to cover all the different nodes (haplotypes). Then we plot it. 
+What we'll do next is put this visually. A haplotype network calculated distances between clusters of haplotypes. This works by quantifying the genetic difference between clusters of genes, then making "branches" between them that reflect this distance. We can also incorporate spatial info in this step.
 
 
-```{r eval=FALSE}
-d <- dist.dna(haps, model = "N")
-nt <- rmst(d, B = 5)
-```
+```{r eval=FALSE, warning=FALSE, include=TRUE}
+oysters_enumerated <- read_delim("../data/Oysters_enumerated.csv")
 
-
-
-OK, now let's look at the haplotype network.
-```{r eval=FALSE}
-plot(nt)
+d <- dist.dna(aligned)
+nt <- rmst(d, quiet = TRUE)
+plot(nt, threshold = c(1, 14))
 ```
 
-Oh boy, that is something! What is going on here? Let's look at the network object. 
 
 ```{r eval=FALSE}
-nt
-```
-This tells us that there are 39 haplotypes, some of which are identical to one another 
-```{r eval=FALSE}
-pops <- c("GI", "GI", "GI", "GI", "GI", "GI","GI","GI", "GI", "LM", "LM", "LM", "LM", "LM", "LM", "LM", "LM", "LM", "NU","NU", "NU", "NU", "NU", "NU", "NU", "NU", "NU", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI", "PI" )
+pops <- c("GI", "GI", "GI", "GI", "GI", "GI","LM", "LM", "LM", "LM", "LM", "LM", "LM",  "NU","NU", "NU", "NU", "NU", "NU",  "PI", "PI", "PI", "PI", "PI", "PI", "PI")
 plot(nt, pie = pops)
 ```
